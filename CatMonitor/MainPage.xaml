@@ -14,6 +14,7 @@
                 <Image x:Name="Sample" Height="200" Width="200"/>
             </StackPanel>
             <TextBlock x:Name="Info" HorizontalAlignment="Center" FontSize="30">OxfordCat is getting ready...</TextBlock>
+            <TextBlock x:Name="Telemetry"/>
         </StackPanel>
     </Grid>
 </Page>
