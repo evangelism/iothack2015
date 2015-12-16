@@ -1,4 +1,6 @@
-﻿using Microsoft.ProjectOxford.Vision;
+﻿using GHIElectronics.UWP.Shields;
+using Microsoft.ProjectOxford.Vision;
+using Microsoft.ProjectOxford.Vision.Contract;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -34,6 +36,7 @@ namespace CatMonitor
         DispatcherTimer dt = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
 
         VisionServiceClient OxfordClient;
+        FEZHAT Shield;
 
         public MainPage()
         {
@@ -44,6 +47,8 @@ namespace CatMonitor
         {
             base.OnNavigatedTo(e);
             await Init();
+            Shield = await FEZHAT.CreateAsync();
+            Shield.D2.Color = new FEZHAT.Color(255, 0, 0);    
         }
 
         private async Task Init()
@@ -57,6 +62,31 @@ namespace CatMonitor
             OxfordClient = new VisionServiceClient("ce3d37851dd447698bd867471bd8c3c3");
         }
 
+        private bool IsCatPresent(AnalysisResult res)
+        {
+            foreach(var c in res.Categories)
+            {
+                if (c.Name.ToLower().Contains("cat"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsPersonPresent(AnalysisResult res)
+        {
+            foreach (var c in res.Categories)
+            {
+                if (c.Name.ToLower().Contains("people"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
         private async void TakePicture(object sender, object e)
         {
             dt.Stop();
@@ -69,13 +99,24 @@ namespace CatMonitor
             Info.Text = "Picture Taken, Recognizing...";
             ms.Position = 0;
             var res = await OxfordClient.AnalyzeImageAsync(ms);
-            var txt = new StringBuilder();
-            foreach (var c in res.Categories)
+            if (IsCatPresent(res))
             {
-                txt.Append(c.Name);
-                txt.Append(" ");
+                Info.Text = "Cat is detected";
+                Shield.D2.Color = new FEZHAT.Color(0, 255, 0);
             }
-            Info.Text = txt.ToString();
+            else
+            {
+                if (IsPersonPresent(res))
+                {
+                    Info.Text = "Person is detected";
+                    Shield.D2.Color = new FEZHAT.Color(0, 0, 255);
+                }
+                else
+                {
+                    Info.Text = "The is no Cat in sight";
+                    Shield.D2.Color = new FEZHAT.Color(255, 0, 0);
+                }
+            }                
             dt.Start();
         }
     }
