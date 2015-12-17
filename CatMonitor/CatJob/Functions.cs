@@ -7,14 +7,25 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.ProjectOxford.Vision;
 using Microsoft.ProjectOxford.Vision.Contract;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace CatJob
 {
-    public class KittieInfo
+    public class KittieInfo : TableEntity
     {
-        public string UrlImage { get; set; }
-        public int EventType { get; set; }
+        public KittieInfo(string Image,string Category)
+        {
+            this.PartitionKey = "MAIN";
+            this.RowKey = Image;
+            this.Image = Image;
+            this.Category = Category;
+            this.Moment = DateTime.Now;
+        }
+
+        public string Image { get; set; }
         public DateTime Moment { get; set; }
+        public string Category { get; set; }
     }
 
     public class Functions
@@ -68,7 +79,18 @@ namespace CatJob
             {
                 var s = MajorCategory(res);
                 Console.WriteLine("{0} ===> {1}", name, s);
+                await StoreData(new KittieInfo(name, s));
             }
+        }
+
+        private static async Task StoreData(KittieInfo ki)
+        {
+            CloudStorageAccount sa = CloudStorageAccount.Parse("DefaultEndpointsProtocol=https;AccountName=r2d2storage;AccountKey=UV+6L2Scr9nJAyaLp+jjZflRyr6K05guMafOFJQcZ85NMUOcA4oQmRFzmMR3djiV3gaYkr2z2rmC9Uol9dNPfg==;BlobEndpoint=https://r2d2storage.blob.core.windows.net/;TableEndpoint=https://r2d2storage.table.core.windows.net/;QueueEndpoint=https://r2d2storage.queue.core.windows.net/;FileEndpoint=https://r2d2storage.file.core.windows.net/");
+            var ts = sa.CreateCloudTableClient();
+            var tab = ts.GetTableReference("KittyData");
+            await tab.CreateIfNotExistsAsync();
+            var top = TableOperation.Insert(ki);
+            await tab.ExecuteAsync(top);
         }
     }
 }

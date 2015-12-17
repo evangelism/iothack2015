@@ -47,7 +47,7 @@ namespace CatMonitor
         VisionServiceClient OxfordClient;
         FEZHAT Shield;
         bool SendTelemetry = true;
-        bool DirectRecognition = false;
+        bool DirectRecognition = true;
 
         CloudBlobContainer ImagesDir;
         DeviceClient IoTHub;
@@ -99,8 +99,11 @@ namespace CatMonitor
             var l = Shield.GetLightLevel();
             Telemetry.Text = $"Temp: {t}, Light: {l}";
             var str = "{\"deviceId\":\"rpi\",\"temp\":\"" + t.ToString() + "\",\"light\":\"" + l.ToString() + "\"}";
-            var msg = new Message(Encoding.UTF8.GetBytes(str));
-            await IoTHub.SendEventAsync(msg);
+            if (SendTelemetry)
+            {
+                var msg = new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes(str));
+                await IoTHub.SendEventAsync(msg);
+            }
         }
 
         private bool IsCatPresent(AnalysisResult res)
@@ -127,7 +130,6 @@ namespace CatMonitor
             return false;
         }
 
-
         private async void TakePicture(object sender, object e)
         {
             PictureTimer.Stop();
@@ -142,41 +144,43 @@ namespace CatMonitor
             await SendPicture(ms);
             Info.Text = "Done, sleeping...";
 
-            /* This was used for local oxford recognition 
-            ms.Position = 0;
-            var res = await OxfordClient.AnalyzeImageAsync(ms);
-            if (IsCatPresent(res))
+            if (DirectRecognition)
             {
-                Info.Text = "Cat is detected";
-                Shield.D2.Color = new FEZHAT.Color(0, 255, 0);
-            }
-            else
-            {
-                if (IsPersonPresent(res))
+                // This is used for local oxford recognition 
+                ms.Position = 0;
+                var res = await OxfordClient.AnalyzeImageAsync(ms);
+                if (IsCatPresent(res))
                 {
-                    Info.Text = "Person is detected";
-                    Shield.D2.Color = new FEZHAT.Color(0, 0, 255);
+                    Info.Text = "Cat is detected";
+                    Shield.D2.Color = new FEZHAT.Color(0, 255, 0);
                 }
                 else
                 {
-                    Info.Text = "The is no Cat in sight";
-                    Shield.D2.Color = new FEZHAT.Color(255, 0, 0);
+                    if (IsPersonPresent(res))
+                    {
+                        Info.Text = "Person is detected";
+                        Shield.D2.Color = new FEZHAT.Color(0, 0, 255);
+                    }
+                    else
+                    {
+                        Info.Text = "The is no Cat in sight";
+                        Shield.D2.Color = new FEZHAT.Color(255, 0, 0);
+                    }
                 }
-            }
-            */
-                            
+            }             
             PictureTimer.Start();
         }
 
         private async Task SendPicture(MemoryStream ms)
         {
-            var name = Guid.NewGuid().ToString();
+            var name = Guid.NewGuid().ToString()+".jpg";
             var b = ImagesDir.GetBlockBlobReference(name);
             b.Properties.ContentType = "image/jpeg";
             await b.UploadFromStreamAsync(ms.AsInputStream());
         }
 
         #region Entertaiment
+
         string eventHubNamespace = "r2d2-eventhub-ns";
         string eventHubName = "r2d2-eventhub";
         string policyName = "RootManageSharedAccessKey";
@@ -298,5 +302,6 @@ namespace CatMonitor
             public int value { get; set; }
         }
         #endregion
+
     }
 }
