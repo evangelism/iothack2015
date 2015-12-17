@@ -41,11 +41,11 @@ namespace CatMonitor
 
         VisionServiceClient OxfordClient;
         FEZHAT Shield;
-        DeviceClient IoTHub;
         bool SendTelemetry = true;
         bool DirectRecognition = false;
 
         CloudBlobContainer ImagesDir;
+        DeviceClient IoTHub;
 
         public MainPage()
         {
@@ -69,6 +69,7 @@ namespace CatMonitor
             await MC.StartPreviewAsync();
             if (DirectRecognition) OxfordClient = new VisionServiceClient("ce3d37851dd447698bd867471bd8c3c3");
             ImagesDir = await GetImagesBlobContainer();
+            IoTHub = DeviceClient.CreateFromConnectionString("DeviceId=rpi;HostName=iothack2015.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=XS37I81YmH7yfXHHCCXyVrG5VzIb1b3+8rLg40tD23w=");
             PictureTimer.Tick += TakePicture;
             PictureTimer.Start();
             TempTimer.Tick += MeasureData;
@@ -90,7 +91,9 @@ namespace CatMonitor
             var t = Shield.GetTemperature();
             var l = Shield.GetLightLevel();
             Telemetry.Text = $"Temp: {t}, Light: {l}";
-
+            var str = "{\"deviceId\":\"rpi\",\"temp\":\"" + t.ToString() + "\",\"light\":\"" + l.ToString() + "\"}";
+            var msg = new Message(Encoding.UTF8.GetBytes(str));
+            await IoTHub.SendEventAsync(msg);
         }
 
         private bool IsCatPresent(AnalysisResult res)
