@@ -1,8 +1,10 @@
 ﻿{
   "dependencies": {
+    "AMQPNetLite": "1.1.5",
     "GHIElectronics.UWP.Shields.FEZHAT": "0.0.8",
     "Microsoft.Azure.Devices.Client": "1.0.0-preview-007",
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.0.0",
+    "Newtonsoft.Json": "8.0.1-beta3",
     "WindowsAzure.Storage": "6.2.0"
   },
   "frameworks": {

@@ -1,11 +1,16 @@
-﻿using GHIElectronics.UWP.Shields;
+﻿using Amqp;
+using Amqp.Framing;
+using Amqp.Types;
+using GHIElectronics.UWP.Shields;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.ProjectOxford.Vision;
 using Microsoft.ProjectOxford.Vision.Contract;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -57,7 +62,9 @@ namespace CatMonitor
             base.OnNavigatedTo(e);
             await Init();
             Shield = await FEZHAT.CreateAsync();
-            Shield.D2.Color = new FEZHAT.Color(255, 0, 0);    
+            //Shield.D2.Color = new FEZHAT.Color(255, 0, 0);
+
+            Task.Run(() => ReceiveMessages());
         }
 
         private async Task Init()
@@ -165,5 +172,128 @@ namespace CatMonitor
             b.Properties.ContentType = "image/jpeg";
             await b.UploadFromStreamAsync(ms.AsInputStream());
         }
+
+        #region Entertaiment
+        string eventHubNamespace = "r2d2-eventhub-ns";
+        string eventHubName = "r2d2-eventhub";
+        string policyName = "RootManageSharedAccessKey";
+        string key = "9BxZGa/7cZ8NJ7r8sxuCl65u7rFJOuNdfsGi09kwiOs=";
+        string partitionkey = "0";
+
+        static ReceiverLink receiverLink;
+        static Connection connection;
+
+        private void Connect()
+        {
+            if (connection != null)
+            {
+                try
+                {
+                    receiverLink.Close();
+                }
+                catch (Exception ex) { Debug.WriteLine(ex.Message); }
+
+                try
+                {
+                    connection.Close();
+                }
+                catch (Exception ex) { Debug.WriteLine(ex.Message); }
+
+            }
+            Address address = new Address(string.Format("{0}.servicebus.windows.net", eventHubNamespace), 5671, policyName, key);
+
+            connection = new Connection(address);
+
+            Session session = new Session(connection);
+
+            Map filters = new Map();
+            filters.Add(
+                new Amqp.Types.Symbol("apache.org:selector-filter:string"),
+                new DescribedValue(
+                    new Amqp.Types.Symbol("apache.org:selector-filter:string"),
+                    "amqp.annotation.x-opt-enqueuedtimeutc > '" + Convert.ToInt64(new TimeSpan(DateTime.UtcNow.Ticks).TotalMilliseconds).ToString() + "'"));
+
+            string targetAddress = null;
+            OnAttached onAttached = (link, attach) =>
+            {
+                targetAddress = ((Target)attach.Target).Address;
+            };
+
+            receiverLink = new ReceiverLink
+                (
+                    session,
+                    string.Format("receiver-link:{0}", eventHubName),
+                    new Source()
+                    {
+                        Address = eventHubName + "/ConsumerGroups/$default/Partitions/" + partitionkey,
+                        FilterSet = filters
+                    }, onAttached
+            );
+        }
+
+        private async void ReceiveMessages()
+        {
+            while (true)
+            {
+                try
+                {
+                    if (receiverLink == null || connection == null || connection.Closed != null || connection.Error != null)
+                    {
+                        Connect();
+                    }
+
+                    Amqp.Message message = receiverLink.Receive();
+
+                    if (message != null)
+                    {
+                        var offset = message.MessageAnnotations[new Amqp.Types.Symbol("x-opt-offset")];
+                        var seqNumber = message.MessageAnnotations[new Amqp.Types.Symbol("x-opt-sequence-number")];
+                        var enqueuedTime = message.MessageAnnotations[new Amqp.Types.Symbol("x-opt-enqueued-time")];
+
+                        string messageBody = Encoding.UTF8.GetString(message.Body as byte[]);
+
+                        Debug.WriteLine(messageBody);
+
+                        SensorData sensorData = JsonConvert.DeserializeObject<SensorData>(messageBody);
+
+                        if (sensorData.sensor == "light")
+                        {
+                            SwitchLights(sensorData.value);
+                        }
+
+                        Debug.WriteLine(Encoding.UTF8.GetString(message.Body as byte[]));
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        private SolidColorBrush redBrush = new SolidColorBrush(Windows.UI.Colors.Red);
+        private SolidColorBrush grayBrush = new SolidColorBrush(Windows.UI.Colors.LightGray);
+
+        async void SwitchLights(int state) // 0 - Released, 1 - Pressed
+        {
+            if (state == 1)
+            {
+                Shield.D2.Color = FEZHAT.Color.White;
+                Shield.D3.Color = FEZHAT.Color.White;
+            }
+            else
+            {
+                Shield.D2.Color = FEZHAT.Color.Black;
+                Shield.D3.Color = FEZHAT.Color.Black;
+            }
+        }
+
+        public class SensorData
+        {
+            public string sensor { get; set; }
+            public int value { get; set; }
+        }
+        #endregion
     }
 }
