@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:a10="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+    <title>My Feed</title>
+    <description />
+    <item xml:base="https://r2d2storage.blob.core.windows.net/kitties/cat1.jpg">
+      <a10:author>
+        <a10:name>Author1</a10:name>
+      </a10:author>
+      <title>Test1</title>
+      <description>Description1</description>
+      <a10:updated>2015-12-16T12:13:25Z</a10:updated>
+      <a10:content type="text">Description1</a10:content>
+    </item>
+    <item xml:base="https://r2d2storage.blob.core.windows.net/kitties/cat2.jpg">
+      <a10:author>
+        <a10:name>Author2</a10:name>
+      </a10:author>
+      <title>Test2</title>
+      <description>Description2</description>
+      <a10:updated>2015-12-16T12:13:26Z</a10:updated>
+      <a10:content type="text">Description2</a10:content>
+    </item>
+    <item xml:base="https://r2d2storage.blob.core.windows.net/kitties/cat3.jpg">
+      <a10:author>
+        <a10:name>Author3</a10:name>
+      </a10:author>
+      <title>Test3</title>
+      <description>Description3</description>
+      <a10:updated>2015-12-16T12:13:26Z</a10:updated>
+      <a10:content type="text">Description3</a10:content>
+    </item>
+    <item xml:base="https://r2d2storage.blob.core.windows.net/kitties/cat4.jpg">
+      <a10:author>
+        <a10:name>Author4</a10:name>
+      </a10:author>
+      <title>Test4</title>
+      <description>Description4</description>
+      <a10:updated>2015-12-16T12:13:26Z</a10:updated>
+      <a10:content type="text">Description4</a10:content>
+    </item>
+    <item xml:base="https://r2d2storage.blob.core.windows.net/kitties/cat5.jpg">
+      <a10:author>
+        <a10:name>Author5</a10:name>
+      </a10:author>
+      <title>Test5</title>
+      <description>Description5</description>
+      <a10:updated>2015-12-16T12:13:25Z</a10:updated>
+      <a10:content type="text">Description5</a10:content>
+    </item>
+  </channel>
+</rss>
