@@ -58,14 +58,15 @@
  
     function insertData(obj) {
 
-        var jObj = JSON.parse(obj);
         // Create a TableData object.
         var data = new Office.TableData();
-        data.headers = ["Address", "CreatedAt", "CreatedBy", "Description", "ImageUrl", "ObjectType", "Title", "UrlId"];
+        //data.headers = ["Address", "CreatedAt", "CreatedBy", "Description", "ImageUrl", "ObjectType", "Title", "UrlId"];
+        data.headers = ["Address", "CreatedAt", "CreatedBy", "Description"];
 
         var i = 0;
         for (; i < obj.length; i++)
-            data.rows += [obj[i].Address, obj[i].CreatedAt, obj[i].CreatedBy, obj[i].Description, obj[i].ImageUrl, obj[i].ObjectType, obj[i].Title, obj[i].UrlId];
+            //data.rows += [obj[i].Address, obj[i].CreatedAt, obj[i].CreatedBy, obj[i].Description, obj[i].ImageUrl, obj[i].ObjectType, obj[i].Title, obj[i].UrlId];
+            data.rows[i] = [obj[i].Address, obj[i].CreatedAt, obj[i].CreatedBy, obj[i].Description];
                    
        
         // Set the myTable in the document.
